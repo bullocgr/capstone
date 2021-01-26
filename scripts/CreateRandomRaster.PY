@@ -14,7 +14,7 @@ import arcpy
 
 if __name__ == '__main__':
 
-    arcpy.env.workspace = r'C:\Users\bullocgr\Documents\ArcGIS\Packages\CapstoneProject_19efd2\p20'
+    arcpy.env.workspace = r'C:\Users\Josiah\Documents\ArcGIS\Projects\Geospatial Analysis For Disaster Planning'
     arcpy.env.overwriteOutput = True
 
     if(arcpy.CheckExtension('Spatial') == 'Available'):
@@ -31,10 +31,11 @@ if __name__ == '__main__':
 
     arcpy.AddMessage(arcpy.GetParameterAsText(1))
 
-    cellSizeValue = float(arcpy.GetParameterAsText(1))
-
-    if(cellSizeValue > (extent.XMax - extent.XMin) or cellSizeValue > (extent.YMax - extent.YMin)):
-        arcpy.AddError("CellSize cannot be larger than extent dimensions")
+    if(arcpy.GetParameterAsText(1) != ""):
+        cellSizeValue = float(arcpy.GetParameterAsText(1))
+        if(cellSizeValue > (extent.XMax - extent.XMin) or cellSizeValue > (extent.YMax - extent.YMin)):
+            arcpy.AddError("CellSize cannot be larger than extent dimensions")
+    
 
     outRandomRaster = CreateRandomRaster(seedValue, cellSize, extent)
     outRandomRaster.save("./output/outrand.tif")
