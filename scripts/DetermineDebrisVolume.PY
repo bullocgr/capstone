@@ -35,20 +35,31 @@ Description:        Tool to determine the volume of debris in a given area
 
 """
 import arcpy
+import numpy
 
-
-def ScriptTool(parameter0, parameter1, parameter2, parameter3):
-    """ScriptTool function docstring"""
-
-    return
 
 #
 if __name__ == '__main__':
-    # ScriptTool parameters
-    parameter0 = arcpy.GetParameterAsText(0)
-    parameter1 = arcpy.GetParameter(1)
-    parameter2 = arcpy.GetParameterAsText(2)
-    parameter3 = arcpy.GetParameterAsText(3)
+
+    area = arcpy.GetParameter(0)      #the feature class containing the polygon area to calculate
+    debris = arcpy.GetParameter(1)      #the raster feature layer containing the spread of debris
     
-    ScriptTool(parameter0, parameter1, parameter2, parameter3)
+    areaDesc = arcpy.Describe(area)
+
+    extentStr = "{} {} {} {}".format(areaDesc.extent.XMin, areaDesc.extent.YMin, areaDesc.extent.XMax, areaDesc.extent.YMax)
+    clipPath = "./output/areaDebris.tif"
+
+    #clip the debris just to the given area
+    debrisClip = arcpy.Clip_management(debris, extentStr, clipPath, area, 0,
+                      "ClippingGeometry", "MAINTAIN_EXTENT")
+
+    #convert the cells of the clipped raster to an array
+    debrisClipDesc = arcpy.Describe(debrisClip)
+    lowerLeftCorner = arcpy.Point(debrisClipDesc.extent.XMin, debrisClipDesc.extent.YMin)
+    array = arcpy.RasterToNumPyArray(clipPath, lowerLeftCorner)
+    debrisSum = array.sum()
+
+    #print the total calculated sum to the message field
+    message = "The total value of the raw data from the raster is {sum}"
+    arcpy.AddMessage(message.format(sum = debrisSum))
 
