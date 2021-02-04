@@ -1,4 +1,5 @@
 """
+update the script
 Tool:               Determine debris volume of a given area
 Source Name:        DetermineDebrisVolume.PY
 Version:            <ArcGIS Version>
@@ -43,7 +44,14 @@ if __name__ == '__main__':
 
     area = arcpy.GetParameter(0)      #the feature class containing the polygon area to calculate
     debris = arcpy.GetParameter(1)      #the raster feature layer containing the spread of debris
-    
+
+    nTracks = arcpy.GetParameter(2)      #the number of tracks
+    nExcavator = arcpy.GetParameter(3)    # the name of the output file
+    arcpy.env.workspace = arcpy.GetParameterAsText(4)
+    fileName = arcpy.GetParameterAsText(5)  #name the output, optional choice
+    if fileName == None:
+        fileName = "areaDebris"
+
     areaDesc = arcpy.Describe(area)
 
     extentStr = "{} {} {} {}".format(areaDesc.extent.XMin, areaDesc.extent.YMin, areaDesc.extent.XMax, areaDesc.extent.YMax)
@@ -63,3 +71,7 @@ if __name__ == '__main__':
     message = "The total value of the raw data from the raster is {sum}"
     arcpy.AddMessage(message.format(sum = debrisSum))
 
+    cleanTime = debrisSum*1000/(int(nTracks)+int(nExcavator))+30
+    RcleanTime = round(cleanTime,2)
+    message1 = "The total time for cleaning the debris is {time} minutes"
+    arcpy.AddMessage(message1.format(time = RcleanTime))
