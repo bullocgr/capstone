@@ -11,12 +11,10 @@ Optional Arguments: <parameter2>
 Description:        <Description>
 """
 import arcpy
-import os.path
-#from os import path
 
 if __name__ == '__main__':
 
-    #arcpy.env.workspace = r'C:\Education\Capstone\CapstoneProject'
+    arcpy.env.workspace = r'C:\Users\Josiah\Documents\ArcGIS\Projects\Geospatial Analysis For Disaster Planning'
     arcpy.env.overwriteOutput = True
 
     if(arcpy.CheckExtension('Spatial') == 'Available'):
@@ -30,8 +28,6 @@ if __name__ == '__main__':
     seedValue = arcpy.GetParameter(0)
     cellSize = arcpy.GetParameter(1)
     extent = arcpy.GetParameter(2)
-    clippingGeo = arcpy.GetParameter(3)
-
 
     arcpy.AddMessage(arcpy.GetParameterAsText(1))
 
@@ -42,25 +38,12 @@ if __name__ == '__main__':
     
 
     outRandomRaster = CreateRandomRaster(seedValue, cellSize, extent)
-    
-    #create the output directory if none exists
-    if os.path.exists("./output") == False:
-    	#arcpy.AddError("Output dir not found")
-    	os.mkdir("./output");
-    
     outRandomRaster.save("./output/outrand.tif")
 
     p = arcpy.mp.ArcGISProject("CURRENT")
     map = p.listMaps()[0]
 
-    if len(arcpy.GetParameterAsText(3)) == 0:
-    	lyrResult = arcpy.MakeRasterLayer_management("./output/outrand.tif", "tempLyr", "", extent, "1")
-    else:
-   		#clip the raster layer to the input clipping geometry layer
-   		extentStr = "{} {} {} {}".format(extent.XMin, extent.YMin, extent.XMax, extent.YMax)
-   		arcpy.Clip_management("./output/outrand.tif", extentStr, "./output/outrandclipped.tif", clippingGeo, .1, "ClippingGeometry", "MAINTAIN_EXTENT")
-   		lyrResult = arcpy.MakeRasterLayer_management("./output/outrandclipped.tif", "tempLyr", "", extent, "1")
-
+    lyrResult = arcpy.MakeRasterLayer_management("./output/outrand.tif", "tempLyr", "", "", "1")
     map.addLayer(lyrResult[0])
 
     arcpy.AddMessage("Successful!")
