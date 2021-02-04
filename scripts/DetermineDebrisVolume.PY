@@ -34,19 +34,30 @@ Description:        Tool to determine the volume of debris in a given area
 
     
 
+
 """
 import arcpy
 import numpy
+import os
 
+def increase_suffix(suff):
+    fileName = "areaDebris" + str(suff) + ".tif"
+    if arcpy.Exists(fileName):
+        #arcpy.AddMessage(fileName + " alread exists!")
+        suff += 1
+        #errorMe = "suff number is {num}"
+        #arcpy.AddMessage(errorMe.format(num = suff))
+        return increase_suffix(suff)
+    else:
+        return int(suff)
 
 #
 if __name__ == '__main__':
 
     area = arcpy.GetParameter(0)      #the feature class containing the polygon area to calculate
     debris = arcpy.GetParameter(1)      #the raster feature layer containing the spread of debris
-
     nTracks = arcpy.GetParameter(2)      #the number of tracks
-    nExcavator = arcpy.GetParameter(3)    # the name of the output file
+    nExcavator = arcpy.GetParameter(3)
     arcpy.env.workspace = arcpy.GetParameterAsText(4)
     fileName = arcpy.GetParameterAsText(5)  #name the output, optional choice
     if fileName == None:
@@ -55,7 +66,11 @@ if __name__ == '__main__':
     areaDesc = arcpy.Describe(area)
 
     extentStr = "{} {} {} {}".format(areaDesc.extent.XMin, areaDesc.extent.YMin, areaDesc.extent.XMax, areaDesc.extent.YMax)
-    clipPath = "./output/areaDebris.tif"
+    #clipPath = "./output/areaDebris.tif"
+    suff = 0
+    #fileName = "areaDebris" + str(suff) + ".tif"
+    suff = increase_suffix(suff)
+    clipPath = "./output/" + fileName + str(suff) + ".tif"
 
     #clip the debris just to the given area
     debrisClip = arcpy.Clip_management(debris, extentStr, clipPath, area, 0,
@@ -73,5 +88,5 @@ if __name__ == '__main__':
 
     cleanTime = debrisSum*1000/(int(nTracks)+int(nExcavator))+30
     RcleanTime = round(cleanTime,2)
-    message1 = "The total time for cleaning the debris is {time} minutes"
+    message1 = "Hi! The total time for cleaning the debris is {time} minutes"
     arcpy.AddMessage(message1.format(time = RcleanTime))
