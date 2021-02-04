@@ -56,7 +56,7 @@ if __name__ == '__main__':
     area = arcpy.GetParameter(0)      #the feature class containing the polygon area to calculate
     debris = arcpy.GetParameter(1)      #the raster feature layer containing the spread of debris
     nTracks = arcpy.GetParameter(2)      #the number of tracks
-    nExcavator = arcpy.GetParameter(3)
+    nExcavator = arcpy.GetParameter(3)    # the name of the output file
     arcpy.env.workspace = arcpy.GetParameterAsText(4)
     fileName = arcpy.GetParameterAsText(5)  #name the output, optional choice
     if fileName == None:
@@ -87,6 +87,6 @@ if __name__ == '__main__':
 
     cleanTime = debrisSum*1000/(int(nTracks)+int(nExcavator))+30
     RcleanTime = round(cleanTime,2)
-    message1 = "Hi! The total time for cleaning the debris is {time} minutes"
+    message1 = "The total time for cleaning the debris is {time} minutes"
     arcpy.AddMessage(message1.format(time = RcleanTime))
 
