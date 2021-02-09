@@ -1,4 +1,5 @@
 """
+Update for error 999999
 Tool:               <Tool label>
 Source Name:        <File name>
 Version:            <ArcGIS Version>
@@ -30,6 +31,8 @@ if __name__ == '__main__':
     cellSize = arcpy.GetParameter(1)
     extent = arcpy.GetParameter(2)
     clippingGeo = arcpy.GetParameter(3)
+    nameOutput = arcpy.GetParameter(4)
+    arcpy.env.workspace = arcpy.GetParameterAsText(5)
 
 
     arcpy.AddMessage(arcpy.GetParameterAsText(1))
@@ -46,19 +49,23 @@ if __name__ == '__main__':
     if os.path.exists("./output") == False:
     	#arcpy.AddError("Output dir not found")
     	os.mkdir("./output");
+    filePath = "./output/" + nameOutput + ".tif"
+    fileName = "./output/" + nameOutput + "Clipped"+ ".tif"
     
-    outRandomRaster.save("./output/outrand.tif")
+    #outRandomRaster.save("./output/outrandp5test.tif")
+    outRandomRaster.save(filePath)
 
     p = arcpy.mp.ArcGISProject("CURRENT")
     map = p.listMaps()[0]
+    #lyrResult = arcpy.MakeRasterLayer_management("./output/outrand.tif", "tempLyr", "", extent, "1")
 
     if len(arcpy.GetParameterAsText(3)) == 0:
-    	lyrResult = arcpy.MakeRasterLayer_management("./output/outrand.tif", "tempLyr", "", extent, "1")
+    	lyrResult = arcpy.MakeRasterLayer_management(filePath, "tempLyr", "", extent, "1")
     else:
    		#clip the raster layer to the input clipping geometry layer
    		extentStr = "{} {} {} {}".format(extent.XMin, extent.YMin, extent.XMax, extent.YMax)
-   		arcpy.Clip_management("./output/outrand.tif", extentStr, "./output/outrandclipped.tif", clippingGeo, .1, "ClippingGeometry", "MAINTAIN_EXTENT")
-   		lyrResult = arcpy.MakeRasterLayer_management("./output/outrandclipped.tif", "tempLyr", "", extent, "1")
+   		arcpy.Clip_management(filePath, extentStr, fileName, clippingGeo, .1, "ClippingGeometry", "MAINTAIN_EXTENT")
+   		lyrResult = arcpy.MakeRasterLayer_management(fileName, "tempLyr", "", extent, "1")
 
     map.addLayer(lyrResult[0])
 
