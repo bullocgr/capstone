@@ -32,61 +32,112 @@ Description:        Tool to determine the volume of debris in a given area
                                 Maybe clip the raster to just the extent, then use a sum function to sum all of that?
 
 
-    
+
 
 
 """
 import arcpy
 import numpy
+import math
 import os
+
 
 def increase_suffix(suff):
     fileName = "areaDebris" + str(suff) + ".tif"
     if arcpy.Exists(fileName):
-        #arcpy.AddMessage(fileName + " alread exists!")
+        # arcpy.AddMessage(fileName + " alread exists!")
         suff += 1
-        #errorMe = "suff number is {num}"
-        #arcpy.AddMessage(errorMe.format(num = suff))
+        # errorMe = "suff number is {num}"
+        # arcpy.AddMessage(errorMe.format(num = suff))
         return increase_suffix(suff)
     else:
         return int(suff)
 
+
+
+# total debris volume of area
+# = density of debris for each individual cell
+# * the area that a cell covers
+# summed over all clipped cells
+def determineTotalVolume(debris):
+    xResult = arcpy.GetRasterProperties_management(debris, "CELLSIZEX")
+    yResult = arcpy.GetRasterProperties_management(debris, "CELLSIZEY")
+    maxYResult = arcpy.GetRasterProperties_management(debris, "TOP")
+
+
+    cellSizeX = float(xResult.getOutput(0))
+    cellSizeY = float(yResult.getOutput(0))
+    maxY = float(maxYResult.getOutput(0))
+
+    # 1 degree latitude = 364000 feet
+    #                   / 3 = yards
+    latDegreeLen = 364000 / 3
+
+    debrisSum = 0
+    rowCount = 0
+    for row in array:
+        # 1 degree of longitude is the cosine of the latitude y
+        # times the longitude at the equator (equivalent to any latitude)
+        longDegreeLen = math.cos(math.radians(maxY - (rowCount * cellSizeY))) * latDegreeLen
+        for cell in row:
+            cellArea = (cellSizeX * longDegreeLen) * \
+                       (cellSizeY * latDegreeLen)
+            msg = "Value of cell: {val}, area of cell: {area} square yards"
+            arcpy.AddMessage(msg.format(val=cell, area=cellArea))
+            msg = "This cell contains {val} tons of debris"
+            arcpy.AddMessage(msg.format(val=cell * cellArea))
+            debrisSum += cell * cellArea
+        rowCount += 1
+
+    # print the total calculated sum to the message field
+    message = "The total volume of debris in the area is {sum}"
+    arcpy.AddMessage(message.format(sum=debrisSum))
+
+    return debrisSum
+
+
 #
 if __name__ == '__main__':
 
-    area = arcpy.GetParameter(0)      #the feature class containing the polygon area to calculate
-    debris = arcpy.GetParameter(1)      #the raster feature layer containing the spread of debris
-    nTracks = arcpy.GetParameter(2)      #the number of tracks
+    area = arcpy.GetParameter(0)  # the feature class containing the polygon area to calculate
+    debris = arcpy.GetParameter(1)  # the raster feature layer containing the spread of debris
+    nTrucks = arcpy.GetParameter(2)  # the number of tracks
     nExcavator = arcpy.GetParameter(3)
-    arcpy.env.workspace = arcpy.GetParameterAsText(4)
-    fileName = arcpy.GetParameterAsText(5)  #name the output, optional choice
+    # Testing removing environement to see if it has any effect
+    # arcpy.env.workspace = arcpy.GetParameterAsText(4)
+    fileName = arcpy.GetParameterAsText(5)  # name the output, optional choice
     if fileName == None:
         fileName = "areaDebris"
 
     areaDesc = arcpy.Describe(area)
 
-    extentStr = "{} {} {} {}".format(areaDesc.extent.XMin, areaDesc.extent.YMin, areaDesc.extent.XMax, areaDesc.extent.YMax)
-    #clipPath = "./output/areaDebris.tif"
+    extentStr = "{} {} {} {}".format(areaDesc.extent.XMin, areaDesc.extent.YMin, areaDesc.extent.XMax,
+                                     areaDesc.extent.YMax)
+    # clipPath = "./output/areaDebris.tif"
     suff = 0
-    #fileName = "areaDebris" + str(suff) + ".tif"
+    # fileName = "areaDebris" + str(suff) + ".tif"
     suff = increase_suffix(suff)
+
+    if os.path.exists("./output") == False:
+    	#arcpy.AddError("Output dir not found")
+    	os.mkdir("./output");
     clipPath = "./output/" + fileName + str(suff) + ".tif"
 
-    #clip the debris just to the given area
+    # clip the debris just to the given area
     debrisClip = arcpy.Clip_management(debris, extentStr, clipPath, area, 0,
-                      "ClippingGeometry", "MAINTAIN_EXTENT")
+                                       "ClippingGeometry", "MAINTAIN_EXTENT")
 
-    #convert the cells of the clipped raster to an array
+    # convert the cells of the clipped raster to an array
     debrisClipDesc = arcpy.Describe(debrisClip)
     lowerLeftCorner = arcpy.Point(debrisClipDesc.extent.XMin, debrisClipDesc.extent.YMin)
     array = arcpy.RasterToNumPyArray(clipPath, lowerLeftCorner)
-    debrisSum = array.sum()
 
-    #print the total calculated sum to the message field
-    message = "The total value of the raw data from the raster is {sum}"
-    arcpy.AddMessage(message.format(sum = debrisSum))
+    totalDebrisVolume = determineTotalVolume(debris)
 
-    cleanTime = debrisSum*1000/(int(nTracks)+int(nExcavator))+30
-    RcleanTime = round(cleanTime,2)
-    message1 = "Hi! The total time for cleaning the debris is {time} minutes"
-    arcpy.AddMessage(message1.format(time = RcleanTime))
+
+    # to do: implement real cleanup math here
+
+    #cleanTime = debrisSum * 1000 / (int(nTrucks) + int(nExcavator)) + 30
+    #RcleanTime = round(cleanTime, 2)
+    #message1 = "Hi! The total time for cleaning the debris is {time} minutes"
+    #arcpy.AddMessage(message1.format(time=RcleanTime))
