@@ -20,97 +20,82 @@ import arcpy
 import numpy
 import os
 import math
+from DetermineDebrisVolume import determineTotalVolume, increase_suffix
 
 
-def increase_suffix(suff):
-    fileName = "areaDebris" + str(suff) + ".tif"
-    if arcpy.Exists(fileName):
-        #arcpy.AddMessage(fileName + " alread exists!")
-        suff += 1
-        #errorMe = "suff number is {num}"
-        #arcpy.AddMessage(errorMe.format(num = suff))
-        return increase_suffix(suff)
-    else:
-        return int(suff)
+"""
+    How I think routing has to work in arcpy:
+        To route, a network dataset is required
+            A network dataset must live within a feature dataset
+            And share the feature dataset with the network (edges and junctions)
+            As well as any stops (I think)
+        Use the network dataset in the process of making a network analysis layer
+        set the layer to read the stops and the edges and junctions, as well as to optimize for shortest distance between stops
+        Finally, use the solve function on the layer
+        Then do something with the result??
+"""
+def getRouteToDump(roads, debrisCenter, dump):
+    #arcpy.CreateRoutes_lr(roads, "ALIAS_NAME", "Routes", "LENGTH", "#", "#", "UPPER_LEFT", "1", "0", "IGNORE", "INDEX")
+    #arcpy.mp.ArcGISProject().defaultGeodatabase
+    networkDataset = "C:/Education/Capstone/CapstoneProject/Default.gdb/Feature_Dataset/Network_Dataset"
 
+    result_object = arcpy.na.MakeRouteAnalysisLayer(networkDataset, "SimpleRoute", "Driving Time")
+    layer_object = result_object.getOutput(0)
+    arcpy.AddMessage(layer_object)
 
-# total debris volume of area
-# = density of debris for each individual cell
-# * the area that a cell covers
-# summed over all clipped cells
-def determineTotalVolume(debris):
-    xResult = arcpy.GetRasterProperties_management(debris, "CELLSIZEX")
-    yResult = arcpy.GetRasterProperties_management(debris, "CELLSIZEY")
-    maxYResult = arcpy.GetRasterProperties_management(debris, "TOP")
+    #Get the names of all the sublayers within the route layer.
+    sublayer_names = arcpy.na.GetNAClassNames(layer_object)
+    arcpy.AddMessage(sublayer_names)
 
-    cellSizeX = float(xResult.getOutput(0))
-    cellSizeY = float(yResult.getOutput(0))
-    maxY = float(maxYResult.getOutput(0))
+    #Stores the layer names that we will use later
+    stops_layer_name = sublayer_names["Stops"]
+    arcpy.AddMessage(stops_layer_name)
+    
+    
+    """
+        Stopping point: need to make sure that the stops feature class has the right type of data
+    """
+    hardCodedStops = "C:/Education/Capstone/CapstoneProject/Default.gdb/Feature_Dataset/stops"
+    arcpy.na.AddLocations(layer_object, "Stops", hardCodedStops, "", "")
 
-    # 1 degree latitude = 364000 feet
-    #                   / 3 = yards
-    latDegreeLen = 364000 / 3
+    arcpy.na.Solve(layer_object)
 
-    debrisSum = 0
-    rowCount = 0
-    for row in array:
-        # 1 degree of longitude is the cosine of the latitude y
-        # times the longitude at the equator (equivalent to any latitude)
-        longDegreeLen = math.cos(math.radians(
-            maxY - (rowCount * cellSizeY))) * latDegreeLen
-        for cell in row:
-            cellArea = (cellSizeX * longDegreeLen) * \
-                       (cellSizeY * latDegreeLen)
-            msg = "Value of cell: {val}, area of cell: {area} square yards"
-            arcpy.AddMessage(msg.format(val=cell, area=cellArea))
-            msg = "This cell contains {val} tons of debris"
-            arcpy.AddMessage(msg.format(val=cell * cellArea))
-            debrisSum += cell * cellArea
-        rowCount += 1
-
-    # print the total calculated sum to the message field
-    message = "The total volume of debris in the area is {sum}"
-    arcpy.AddMessage(message.format(sum=debrisSum))
-
-    return debrisSum
-
+    outputLayer = "C:/Education/Capstone/CapstoneProject/Default.gdb/Feature_Dataset/route.lyrx"
+    layer_object.saveACopy(output_layer_file)
 
 if __name__ == '__main__':
 
-    # the feature class containing the polygon area to calculate
-    area = arcpy.GetParameter(0)
-    # the raster feature layer containing the spread of debris
-    debris = arcpy.GetParameter(1)
-    nTracks = arcpy.GetParameter(2)  # the number of tracks
-    nExcavator = arcpy.GetParameter(3)
-    # Loader fleet refers to 1 loader and the trucks that it hauls.
-    loaderFleets = arcpy.GetParameter(4)
-    fileName = arcpy.GetParameterAsText(5)  # name the output, optional choice
-    if fileName == None:
-        fileName = "areaDebris"
-    arcpy.env.workspace = arcpy.GetParameterAsText(6)
+    
+    area = arcpy.GetParameter(0)                # the feature class containing the polygon area to calculate
+    debris = arcpy.GetParameter(1)              # the raster feature layer containing the spread of debris
+    roads = arcpy.GetParameter(2)               # the feature class containing the road lines and points
+    dumpLoc = arcpy.GetParameter(3)             # the point (coordinate) of the dump site
+
+    # the rest of the variables to follow
+    #loaderFleets = arcpy.GetParameter(4)        # Loader fleet refers to 1 loader and the trucks that it hauls.
+    
+
 
     areaDesc = arcpy.Describe(area)
-
     extentStr = "{} {} {} {}".format(
         areaDesc.extent.XMin, areaDesc.extent.YMin, areaDesc.extent.XMax, areaDesc.extent.YMax)
-    #clipPath = "./output/areaDebris.tif"
+
     suff = 0
-    #fileName = "areaDebris" + str(suff) + ".tif"
     suff = increase_suffix(suff)
-    clipPath = "./output/" + fileName + str(suff) + ".tif"
+    clipPath = "./output/clip" + str(suff) + ".tif"
 
     # clip the debris just to the given area
     debrisClip = arcpy.Clip_management(debris, extentStr, clipPath, area, 0,
                                        "ClippingGeometry", "MAINTAIN_EXTENT")
 
-    # convert the cells of the clipped raster to an array
-    debrisClipDesc = arcpy.Describe(debrisClip)
-    lowerLeftCorner = arcpy.Point(
-        debrisClipDesc.extent.XMin, debrisClipDesc.extent.YMin)
-    array = arcpy.RasterToNumPyArray(clipPath, lowerLeftCorner)
     # debrisSum = array.sum()
-    totalDebrisVolume = determineTotalVolume(debris)
+    totalDebrisVolume = determineTotalVolume(debrisClip, clipPath)
+
+    centerPoint = arcpy.Point((areaDesc.extent.XMin + areaDesc.extent.XMax) / 2, (areaDesc.extent.YMin + areaDesc.extent.YMax) / 2)
+    route = getRouteToDump(roads, centerPoint, dumpLoc)
+
+    # routeLength = route.
+
 
     # default values:
     # Volume / Truck = 30cy
