@@ -59,12 +59,18 @@ def increase_suffix(suff):
 # = density of debris for each individual cell
 # * the area that a cell covers
 # summed over all clipped cells
-def determineTotalVolume(debris):
+def determineTotalVolume(debris, debrisPath):
+
+	# convert the cells of the clipped raster to an array
+    debrisClipDesc = arcpy.Describe(debris)
+    lowerLeftCorner = arcpy.Point(debrisClipDesc.extent.XMin, debrisClipDesc.extent.YMin)
+    array = arcpy.RasterToNumPyArray(debrisPath, lowerLeftCorner)
+    arcpy.AddMessage("debris: {}".format(debris))
+
+    #get info from the clipped raster
     xResult = arcpy.GetRasterProperties_management(debris, "CELLSIZEX")
     yResult = arcpy.GetRasterProperties_management(debris, "CELLSIZEY")
     maxYResult = arcpy.GetRasterProperties_management(debris, "TOP")
-
-
     cellSizeX = float(xResult.getOutput(0))
     cellSizeY = float(yResult.getOutput(0))
     maxY = float(maxYResult.getOutput(0))
@@ -101,11 +107,9 @@ if __name__ == '__main__':
 
     area = arcpy.GetParameter(0)  # the feature class containing the polygon area to calculate
     debris = arcpy.GetParameter(1)  # the raster feature layer containing the spread of debris
-    nTrucks = arcpy.GetParameter(2)  # the number of tracks
-    nExcavator = arcpy.GetParameter(3)
     # Testing removing environement to see if it has any effect
     # arcpy.env.workspace = arcpy.GetParameterAsText(4)
-    fileName = arcpy.GetParameterAsText(5)  # name the output, optional choice
+    fileName = arcpy.GetParameterAsText(2)  # name the output, optional choice
     if fileName == None:
         fileName = "areaDebris"
 
@@ -127,17 +131,8 @@ if __name__ == '__main__':
     debrisClip = arcpy.Clip_management(debris, extentStr, clipPath, area, 0,
                                        "ClippingGeometry", "MAINTAIN_EXTENT")
 
-    # convert the cells of the clipped raster to an array
-    debrisClipDesc = arcpy.Describe(debrisClip)
-    lowerLeftCorner = arcpy.Point(debrisClipDesc.extent.XMin, debrisClipDesc.extent.YMin)
-    array = arcpy.RasterToNumPyArray(clipPath, lowerLeftCorner)
 
-    totalDebrisVolume = determineTotalVolume(debris)
+    totalDebrisVolume = determineTotalVolume(debrisClip, clipPath)
 
 
-    # to do: implement real cleanup math here
 
-    #cleanTime = debrisSum * 1000 / (int(nTrucks) + int(nExcavator)) + 30
-    #RcleanTime = round(cleanTime, 2)
-    #message1 = "Hi! The total time for cleaning the debris is {time} minutes"
-    #arcpy.AddMessage(message1.format(time=RcleanTime))
