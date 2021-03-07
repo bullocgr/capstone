@@ -34,52 +34,79 @@ from DetermineDebrisVolume import determineTotalVolume, increase_suffix
         Finally, use the solve function on the layer
         Then do something with the result??
 """
-def getRouteToDump(roads, debrisCenter, dump):
-    #arcpy.CreateRoutes_lr(roads, "ALIAS_NAME", "Routes", "LENGTH", "#", "#", "UPPER_LEFT", "1", "0", "IGNORE", "INDEX")
-    #arcpy.mp.ArcGISProject().defaultGeodatabase
-    networkDataset = "C:/Education/Capstone/CapstoneProject/Default.gdb/Feature_Dataset/Network_Dataset"
+def getRouteToDump(featureDataset, roads, debrisCenter, dump):
 
-    result_object = arcpy.na.MakeRouteAnalysisLayer(networkDataset, "SimpleRoute", "Driving Time")
+    if arcpy.CheckExtension("network") == "Available":
+        arcpy.CheckOutExtension("network")
+    else:
+        raise arcpy.ExecuteError("Network Analyst Extension license is not available.")
+
+
+    stopsFC = createStops(featureDataset, debrisCenter, dump)          # first create the feature class for the stops (debris site and dump site)
+
+
+    networkDataset = arcpy.na.CreateNetworkDataset(featureDataset, "Road_Network" , [roads, "Stops"], "NO_ELEVATION" ) # create new network dataset 
+    arcpy.na.BuildNetwork(networkDataset)
+
+
+    result_object = arcpy.na.MakeRouteAnalysisLayer(networkDataset, "SimpleRoute")
     layer_object = result_object.getOutput(0)
-    arcpy.AddMessage(layer_object)
-
-    #Get the names of all the sublayers within the route layer.
-    sublayer_names = arcpy.na.GetNAClassNames(layer_object)
-    arcpy.AddMessage(sublayer_names)
-
-    #Stores the layer names that we will use later
-    stops_layer_name = sublayer_names["Stops"]
-    arcpy.AddMessage(stops_layer_name)
-    
-    
-    """
-        Stopping point: need to make sure that the stops feature class has the right type of data
-    """
-    hardCodedStops = "C:/Education/Capstone/CapstoneProject/Default.gdb/Feature_Dataset/stops"
-    arcpy.na.AddLocations(layer_object, "Stops", hardCodedStops, "", "")
+    sublayer_names = arcpy.na.GetNAClassNames(layer_object) #Get the names of all the sublayers within the route layer.
+    stops_layer_name = sublayer_names["Stops"]              #Stores the layer names that we will use later
+    arcpy.na.AddLocations(layer_object, stops_layer_name, stopsFC, "", "")
 
     arcpy.na.Solve(layer_object)
 
     outputLayer = "C:/Education/Capstone/CapstoneProject/Default.gdb/Feature_Dataset/route.lyrx"
     layer_object.saveACopy(output_layer_file)
 
+
+
+def createStops(featureDataset, startPoint, endPoint):
+
+    featureClass = arcpy.management.CreateFeatureclass(featureDataset, "Stops", "POINT")
+
+    cursor = arcpy.da.InsertCursor(featureClass, ["SHAPE@XY"])
+
+
+    arcpy.AddMessage(startPoint.Y)
+    arcpy.AddMessage(endPoint.Y)
+    metersPerDegreeX = 111319.9
+    metersPerDegreeY = 125802.7         #????? Using the extent of other points in the area to derive this one, the other wasn't even close
+    coordsToMeters = [(startPoint.X * metersPerDegreeX,  startPoint.Y * metersPerDegreeY),
+                    (endPoint.X * metersPerDegreeX, endPoint.Y *  metersPerDegreeY)]
+
+    cursor.insertRow([coordsToMeters[0]])
+    cursor.insertRow([coordsToMeters[1]])
+
+
+    return featureClass
+
+
+
 if __name__ == '__main__':
 
     
     area = arcpy.GetParameter(0)                # the feature class containing the polygon area to calculate
     debris = arcpy.GetParameter(1)              # the raster feature layer containing the spread of debris
-    roads = arcpy.GetParameter(2)               # the feature class containing the road lines and points
-    dumpLoc = arcpy.GetParameter(3)             # the point (coordinate) of the dump site
+    featureDataset = arcpy.GetParameter(2)      # the feature dataset containing the roads
+    roadsFC = arcpy.GetParameter(3)             # the name of the road feature class
+    dumpArg = arcpy.GetParameterAsText(4).split()       # the point (coordinate) of the dump site - no idea why it won't import as a point (??)
+    dumpPoint = arcpy.Point(float(dumpArg[0]), float(dumpArg[1]))
 
     # the rest of the variables to follow
     #loaderFleets = arcpy.GetParameter(4)        # Loader fleet refers to 1 loader and the trucks that it hauls.
     
 
-
+    
+    #   Get the total volume of debris in the area
+    #
     areaDesc = arcpy.Describe(area)
+    
+    """
     extentStr = "{} {} {} {}".format(
         areaDesc.extent.XMin, areaDesc.extent.YMin, areaDesc.extent.XMax, areaDesc.extent.YMax)
-
+    
     suff = 0
     suff = increase_suffix(suff)
     clipPath = "./output/clip" + str(suff) + ".tif"
@@ -91,12 +118,17 @@ if __name__ == '__main__':
     # debrisSum = array.sum()
     totalDebrisVolume = determineTotalVolume(debrisClip, clipPath)
 
+    
+    """
+
+    #       Get the route to the dump and its distance:
+    #
     centerPoint = arcpy.Point((areaDesc.extent.XMin + areaDesc.extent.XMax) / 2, (areaDesc.extent.YMin + areaDesc.extent.YMax) / 2)
-    route = getRouteToDump(roads, centerPoint, dumpLoc)
+    getRouteToDump(featureDataset, roadsFC, centerPoint, dumpPoint)
 
     # routeLength = route.
 
-
+    """
     # default values:
     # Volume / Truck = 30cy
     TruckVLimit = 30
@@ -157,3 +189,4 @@ if __name__ == '__main__':
     RcleanTime = round(DaysToClean, 2)
     message1 = "Hi! The total time for cleaning the debris is {time} days"
     arcpy.AddMessage(message1.format(time=RcleanTime))
+    """

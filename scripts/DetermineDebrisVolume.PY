@@ -88,10 +88,12 @@ def determineTotalVolume(debris, debrisPath):
         for cell in row:
             cellArea = (cellSizeX * longDegreeLen) * \
                        (cellSizeY * latDegreeLen)
+            """
             msg = "Value of cell: {val}, area of cell: {area} square yards"
             arcpy.AddMessage(msg.format(val=cell, area=cellArea))
             msg = "This cell contains {val} tons of debris"
             arcpy.AddMessage(msg.format(val=cell * cellArea))
+            """
             debrisSum += cell * cellArea
         rowCount += 1
 
