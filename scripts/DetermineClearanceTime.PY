@@ -97,8 +97,17 @@ if __name__ == '__main__':
     # the rest of the variables to follow
     #loaderFleets = arcpy.GetParameter(4)        # Loader fleet refers to 1 loader and the trucks that it hauls.
     
+    truckVLimit = arcpy.GetParameterAsText(5)
+    truckWLimit = arcpy.GetParameterAsText(6)
+    loadCTime = arcpy.GetParameter(7)
+    efficiency = arcpy.GetParameter(8)
+    truckSpeedL = arcpy.GetParameter(9)
+    truckSpeedE = arcpy.GetParameter(10)
+    loadTime = arcpy.GetParameter(11)
+    dumpTime = arcpy.GetParameter(12)
+    waitingTime = arcpy.GetParameter(13)
 
-    
+
     #   Get the total volume of debris in the area
     #
     areaDesc = arcpy.Describe(area)
