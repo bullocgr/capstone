@@ -125,6 +125,7 @@ if __name__ == '__main__':
                                        "ClippingGeometry", "MAINTAIN_EXTENT")
 
     # debrisSum = array.sum()
+    #TODO: add debris units parameter to function call 
     totalDebrisVolume = determineTotalVolume(debrisClip, clipPath)
 
     

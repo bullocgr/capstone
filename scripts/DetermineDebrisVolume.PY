@@ -59,7 +59,7 @@ def increase_suffix(suff):
 # = density of debris for each individual cell
 # * the area that a cell covers
 # summed over all clipped cells
-def determineTotalVolume(debris, debrisPath):
+def determineTotalVolume(debris, debrisPath, debrisUnits):
 
 	# convert the cells of the clipped raster to an array
     debrisClipDesc = arcpy.Describe(debris)
@@ -67,39 +67,11 @@ def determineTotalVolume(debris, debrisPath):
     array = arcpy.RasterToNumPyArray(debrisPath, lowerLeftCorner)
     arcpy.AddMessage("debris: {}".format(debris))
 
-    #get info from the clipped raster
-    xResult = arcpy.GetRasterProperties_management(debris, "CELLSIZEX")
-    yResult = arcpy.GetRasterProperties_management(debris, "CELLSIZEY")
-    maxYResult = arcpy.GetRasterProperties_management(debris, "TOP")
-    cellSizeX = float(xResult.getOutput(0))
-    cellSizeY = float(yResult.getOutput(0))
-    maxY = float(maxYResult.getOutput(0))
-
-    # 1 degree latitude = 364000 feet
-    #                   / 3 = yards
-    latDegreeLen = 364000 / 3
-
-    debrisSum = 0
-    rowCount = 0
-    for row in array:
-        # 1 degree of longitude is the cosine of the latitude y
-        # times the longitude at the equator (equivalent to any latitude)
-        longDegreeLen = math.cos(math.radians(maxY - (rowCount * cellSizeY))) * latDegreeLen
-        for cell in row:
-            cellArea = (cellSizeX * longDegreeLen) * \
-                       (cellSizeY * latDegreeLen)
-            """
-            msg = "Value of cell: {val}, area of cell: {area} square yards"
-            arcpy.AddMessage(msg.format(val=cell, area=cellArea))
-            msg = "This cell contains {val} tons of debris"
-            arcpy.AddMessage(msg.format(val=cell * cellArea))
-            """
-            debrisSum += cell * cellArea
-        rowCount += 1
+    debrisSum = array.sum()
 
     # print the total calculated sum to the message field
-    message = "The total volume of debris in the area is {sum}"
-    arcpy.AddMessage(message.format(sum=debrisSum))
+    message = "The total volume of debris in the area is {sum} {unit}"
+    arcpy.AddMessage(message.format(sum=debrisSum, unit=debrisUnits))
 
     return debrisSum
 
@@ -114,6 +86,8 @@ if __name__ == '__main__':
     fileName = arcpy.GetParameterAsText(2)  # name the output, optional choice
     if fileName == None:
         fileName = "areaDebris"
+
+    debrisUnits = arcpy.GetParameterAsText(3)
 
     areaDesc = arcpy.Describe(area)
 
@@ -134,7 +108,7 @@ if __name__ == '__main__':
                                        "ClippingGeometry", "MAINTAIN_EXTENT")
 
 
-    totalDebrisVolume = determineTotalVolume(debrisClip, clipPath)
+    totalDebrisVolume = determineTotalVolume(debrisClip, clipPath, debrisUnits)
 
 
 
