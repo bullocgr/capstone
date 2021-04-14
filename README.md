@@ -18,4 +18,4 @@ The repo is made up of two parts: the `scripts` folder and the `toolboxes` folde
 ### How to Run the Repo
 Once ArcGIS Pro and the repo have been properly downloaded, navigate to the `insert` tab in ArcGIS Pro and find the `toolbox` button. Click that and select `add toolbox`. Navigate to where the repo is saved on your computer and go into the `toolboxes` folder. Select the toolbox you want to import. Once the toolbox is imported, open it in the catalog side pannel to the right and you should see a `script` there. Right click the script and select `properties`. In the `script file` section, set it to point at the appropriate script in the `scripts` folder of where this repo is saved. You should have everything set up to run properly now.
 
-*Each script requires different things to run. Navigate to the wiki or look in the scripts to see what is required to run the scripts.*
+*Each script requires different things to run. Navigate to the [wiki](https://github.com/bullocgr/capstone/wiki) or look in the scripts to see what is required to run the scripts.*
