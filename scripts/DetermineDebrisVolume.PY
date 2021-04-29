@@ -56,10 +56,8 @@ def increase_suffix(suff):
 
 
 # total debris volume of area
-# = density of debris for each individual cell
-# * the area that a cell covers
-# summed over all clipped cells
-def determineTotalVolume(debris, debrisPath, debrisUnits):
+# sums debris volume over all clipped cells
+def determineTotalVolume(debris, debrisPath, debrisUnits="Cubic Yards"):
 
 	# convert the cells of the clipped raster to an array
     debrisClipDesc = arcpy.Describe(debris)

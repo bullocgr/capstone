@@ -19,25 +19,21 @@ import os
 import math
 from DetermineDebrisVolume import determineTotalVolume, increase_suffix
 
-
 if __name__ == '__main__':
 
-    
     area = arcpy.GetParameter(0)                # the feature class containing the polygon area to calculate
     debris = arcpy.GetParameter(1)              # the raster feature layer containing the spread of debris
-    numLoaders = arcpy.GetParameter(2)
-    trucksPerLoader = arcpy.GetParameter(3)  
-    routeLength = arcpy.GetParameter(4)  
-    truckVLimit = arcpy.GetParameterAsText(5)
-    truckWLimit = arcpy.GetParameterAsText(6)
-    loadCTime = arcpy.GetParameter(7)
-    efficiency = arcpy.GetParameter(8)
-    truckSpeedL = arcpy.GetParameter(9)
-    truckSpeedE = arcpy.GetParameter(10)
-    loadTime = arcpy.GetParameter(11)
-    dumpTime = arcpy.GetParameter(12)
-    waitingTime = arcpy.GetParameter(13)
-
+    numLoaders = int(arcpy.GetParameter(2))
+    trucksPerLoader = int(arcpy.GetParameter(3))
+    routeLength = float(arcpy.GetParameter(4)  )
+    TruckVLimit = float(arcpy.GetParameter(5))
+    truckWLimit = float(arcpy.GetParameter(6))
+    efficiency = float(arcpy.GetParameter(7))
+    truckSpeedL = float(arcpy.GetParameter(8))
+    truckSpeedE = float(arcpy.GetParameter(9))
+    loadTime = float(arcpy.GetParameter(10))
+    dumpTime = float(arcpy.GetParameter(11))
+    waitingTime = float(arcpy.GetParameter(12))
 
     #   Get the total volume of debris in the area
     #
@@ -59,7 +55,7 @@ if __name__ == '__main__':
     totalDebrisVolume = determineTotalVolume(debrisClip, clipPath)
 
     #assume an 8 hour work day
-	workHourDay = 8
+    workHourDay = 8
 
     # Density (lb/cy)
     ConcreteDensity = 860
@@ -91,16 +87,16 @@ if __name__ == '__main__':
 
     #come back to this later, add message mentioning an ideal allocation of resources and the time that would save
     if (int(trucksPerLoader) < ideal):
-        Productivity = trucksPerLoader*TruckVLimit/(LoadCTime*60*Efficiency)
+        Productivity = trucksPerLoader*TruckVLimit/(truckCycleTime*60*efficiency)
     else:
         # ideal productivity
-        Productivity = TruckVLimit/(TruckCTime*60*Efficiency)
+        Productivity = ideal*TruckVLimit/(truckCycleTime*60*efficiency)
 
     TimeToClear = VolDebris/Productivity
 
-    # days to clear for 1 loader fleet
-    Days1Fleet = TimeToClear / workHourDay
-    DaysToClean = Days1Fleet/(int(loaderFleets)*2000)
+    # days to clear with the given resources
+    DaysToClean = TimeToClear / workHourDay
+    #DaysToClean = Days1Fleet/(int(loaderFleets)*2000)
 
     RcleanTime = round(DaysToClean, 2)
     message1 = "The total time for cleaning the debris is {time} days"
