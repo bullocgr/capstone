@@ -29,11 +29,12 @@ if __name__ == '__main__':
     TruckVLimit = float(arcpy.GetParameter(5))
     truckWLimit = float(arcpy.GetParameter(6))
     efficiency = float(arcpy.GetParameter(7))
-    truckSpeedL = float(arcpy.GetParameter(8))
-    truckSpeedE = float(arcpy.GetParameter(9))
-    loadTime = float(arcpy.GetParameter(10))
-    dumpTime = float(arcpy.GetParameter(11))
-    waitingTime = float(arcpy.GetParameter(12))
+    workHourDay = float(arcpy.GetParameter(8))
+    truckSpeedL = float(arcpy.GetParameter(9))
+    truckSpeedE = float(arcpy.GetParameter(10))
+    loadTime = float(arcpy.GetParameter(11))
+    dumpTime = float(arcpy.GetParameter(12))
+    waitingTime = float(arcpy.GetParameter(13))
 
     #   Get the total volume of debris in the area
     #
@@ -50,12 +51,8 @@ if __name__ == '__main__':
     debrisClip = arcpy.Clip_management(debris, extentStr, clipPath, area, 0,
                                        "ClippingGeometry", "MAINTAIN_EXTENT")
 
-    # debrisSum = array.sum()
-    #TODO: add debris units parameter to function call 
+    #total volume of debris in cubic yards
     totalDebrisVolume = determineTotalVolume(debrisClip, clipPath)
-
-    #assume an 8 hour work day
-    workHourDay = 8
 
     # Density (lb/cy)
     ConcreteDensity = 860
@@ -73,26 +70,20 @@ if __name__ == '__main__':
     HaulTime = routeLength / truckSpeedL * 60
     ReturnTime = routeLength / truckSpeedE * 60
 
-    truckCycleTime = loadTime + HaulTime + dumpTime + ReturnTime + waitingTime
-
-    # Quantity of Debris(1ton = 2000lbs)
-    QuantityDebrisT = totalDebrisVolume
-    QuantityDebrislb = QuantityDebrisT*2000
-
-    # volume of debris (cy)
-    VolDebris = QuantityDebrislb/WnBDensity
+    truckCycleTimeMins = loadTime + HaulTime + dumpTime + ReturnTime + waitingTime
+    truckCycleTimeHours = truckCycleTimeMins / 60
 
     # ideal number trucks/loader: the number of trucks per loader so loader can constantly be filling a truck
     ideal = 1 / (loadTime / 60)
 
     #come back to this later, add message mentioning an ideal allocation of resources and the time that would save
     if (int(trucksPerLoader) < ideal):
-        Productivity = trucksPerLoader*TruckVLimit/(truckCycleTime*60*efficiency)
+        Productivity = trucksPerLoader*TruckVLimit/truckCycleTimeHours*efficiency
     else:
         # ideal productivity
-        Productivity = ideal*TruckVLimit/(truckCycleTime*60*efficiency)
+        Productivity = ideal*TruckVLimit/truckCycleTimeHours*efficiency
 
-    TimeToClear = VolDebris/Productivity
+    TimeToClear = totalDebrisVolume/Productivity
 
     # days to clear with the given resources
     DaysToClean = TimeToClear / workHourDay
