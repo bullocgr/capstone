@@ -56,42 +56,20 @@ def increase_suffix(suff):
 
 
 # total debris volume of area
-# = density of debris for each individual cell
-# * the area that a cell covers
-# summed over all clipped cells
-def determineTotalVolume(debris):
-    xResult = arcpy.GetRasterProperties_management(debris, "CELLSIZEX")
-    yResult = arcpy.GetRasterProperties_management(debris, "CELLSIZEY")
-    maxYResult = arcpy.GetRasterProperties_management(debris, "TOP")
+# sums debris volume over all clipped cells
+def determineTotalVolume(debris, debrisPath, debrisUnits="Cubic Yards"):
 
+	# convert the cells of the clipped raster to an array
+    debrisClipDesc = arcpy.Describe(debris)
+    lowerLeftCorner = arcpy.Point(debrisClipDesc.extent.XMin, debrisClipDesc.extent.YMin)
+    array = arcpy.RasterToNumPyArray(debrisPath, lowerLeftCorner)
+    arcpy.AddMessage("debris: {}".format(debris))
 
-    cellSizeX = float(xResult.getOutput(0))
-    cellSizeY = float(yResult.getOutput(0))
-    maxY = float(maxYResult.getOutput(0))
-
-    # 1 degree latitude = 364000 feet
-    #                   / 3 = yards
-    latDegreeLen = 364000 / 3
-
-    debrisSum = 0
-    rowCount = 0
-    for row in array:
-        # 1 degree of longitude is the cosine of the latitude y
-        # times the longitude at the equator (equivalent to any latitude)
-        longDegreeLen = math.cos(math.radians(maxY - (rowCount * cellSizeY))) * latDegreeLen
-        for cell in row:
-            cellArea = (cellSizeX * longDegreeLen) * \
-                       (cellSizeY * latDegreeLen)
-            msg = "Value of cell: {val}, area of cell: {area} square yards"
-            arcpy.AddMessage(msg.format(val=cell, area=cellArea))
-            msg = "This cell contains {val} tons of debris"
-            arcpy.AddMessage(msg.format(val=cell * cellArea))
-            debrisSum += cell * cellArea
-        rowCount += 1
+    debrisSum = array.sum()
 
     # print the total calculated sum to the message field
-    message = "The total volume of debris in the area is {sum}"
-    arcpy.AddMessage(message.format(sum=debrisSum))
+    message = "The total volume of debris in the area is {sum} {unit}"
+    arcpy.AddMessage(message.format(sum=debrisSum, unit=debrisUnits))
 
     return debrisSum
 
@@ -101,13 +79,13 @@ if __name__ == '__main__':
 
     area = arcpy.GetParameter(0)  # the feature class containing the polygon area to calculate
     debris = arcpy.GetParameter(1)  # the raster feature layer containing the spread of debris
-    nTrucks = arcpy.GetParameter(2)  # the number of tracks
-    nExcavator = arcpy.GetParameter(3)
     # Testing removing environement to see if it has any effect
     # arcpy.env.workspace = arcpy.GetParameterAsText(4)
-    fileName = arcpy.GetParameterAsText(5)  # name the output, optional choice
+    fileName = arcpy.GetParameterAsText(2)  # name the output, optional choice
     if fileName == None:
         fileName = "areaDebris"
+
+    debrisUnits = arcpy.GetParameterAsText(3)
 
     areaDesc = arcpy.Describe(area)
 
@@ -127,17 +105,8 @@ if __name__ == '__main__':
     debrisClip = arcpy.Clip_management(debris, extentStr, clipPath, area, 0,
                                        "ClippingGeometry", "MAINTAIN_EXTENT")
 
-    # convert the cells of the clipped raster to an array
-    debrisClipDesc = arcpy.Describe(debrisClip)
-    lowerLeftCorner = arcpy.Point(debrisClipDesc.extent.XMin, debrisClipDesc.extent.YMin)
-    array = arcpy.RasterToNumPyArray(clipPath, lowerLeftCorner)
 
-    totalDebrisVolume = determineTotalVolume(debris)
+    totalDebrisVolume = determineTotalVolume(debrisClip, clipPath, debrisUnits)
 
 
-    # to do: implement real cleanup math here
 
-    #cleanTime = debrisSum * 1000 / (int(nTrucks) + int(nExcavator)) + 30
-    #RcleanTime = round(cleanTime, 2)
-    #message1 = "Hi! The total time for cleaning the debris is {time} minutes"
-    #arcpy.AddMessage(message1.format(time=RcleanTime))
