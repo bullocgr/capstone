@@ -1,15 +1,23 @@
 """
-Update for error 999999
-Tool:               <Tool label>
-Source Name:        <File name>
-Version:            <ArcGIS Version>
-Author:             <Author>
-Usage:              <Command syntax>
-Required Arguments: <parameter0>
-                    <parameter1>
-Optional Arguments: <parameter2>
-                    <parameter3>
-Description:        <Description>
+Tool:               Create random debris raster data
+Source Name:        CreateRandomRaster.PY
+ArcGIS Version:            2.6.0
+Required Arguments: Cell Size:
+                        Determines how large each data cell (each square) is inside the raster. Larger values will create larger cells/squares
+                    Extent:
+                        The size (coordinate values) of the space to generate the raster inside. An existing polygon or feature can be used or a new one can be drawn.
+                    Clip To:
+                         The shape to clip the resulting raster image to. An existing polygon or feature can be used or a new one can be drawn.
+                    Name of Output File:
+                        The desired name of the output .tif file
+                    Environment (env) Workspace:
+                        A folder from the workspace should be used for the environment workspace.
+
+Optional Arguments: Seed Value:
+                        Value to seed the generation of randomness for the raster (optional). This should be an integer or floating-point number.
+
+Description:        This script is used to generate random raster data that can be used for testing purposes. The script takes in user input for the area the
+                    user wants to find debris for. It then uses the Arcpy library to generate raster data.
 """
 import arcpy
 import os.path
