@@ -2,8 +2,10 @@
 ## Create Random Raster
 
 This script is used to generate random raster data that can be used for testing purposes. The script takes in user input for the area the user wants to find debris for. It then uses the Arcpy library to generate raster data.   
+
 Returns:   
 - raster with random values between 0 and 1, exclusive. 
+
 
 ## Determine Debris VOlume
 
@@ -16,9 +18,11 @@ Takes in:
 Returns:
  - The total volume of debris, in appropriate units, printed to the output of the script in arcGIS Pro
 
+
 ## Determine Clearance Time
 
 Tool to determine the total time to clear a given area of debris.The script reads in a given raster layer to determine the debris amount, and uses user-supplied material variables to estimate the time it would take to clean a certain area.  
+
 Takes in: 
  - Debris Raster Layer
  - The polygon area over which the user wants to clear debris
